@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Ошибка доступа — {{request.app.title}}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-16 text-center flex flex-col items-center gap-6">
+
+    <!-- Illustration -->
+    <div class="text-8xl select-none">🔒</div>
+
+    <!-- Code -->
+    <div class="text-9xl font-black text-indigo-100 dark:text-indigo-900 leading-none select-none">
+        401
+    </div>
+
+    <!-- Message -->
+    <div class="-mt-4 flex flex-col gap-2">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            Необходима авторизация
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">
+            Чтобы просматривать эту страницу, нужно войти в аккаунт.
+        </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-3 w-full">
+        <a href="/api/views/users/login"
+           class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold
+                  py-2.5 rounded-xl transition text-center">
+            Войти
+        </a>
+        <a href="/api/views/users/signup"
+           class="flex-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700
+                  border border-gray-300 dark:border-gray-600
+                  text-gray-700 dark:text-gray-300 font-semibold
+                  py-2.5 rounded-xl transition text-center">
+            Зарегистрироваться
+        </a>
+    </div>
+
+</div>
+{% endblock %}

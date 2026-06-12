@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация — {{request.app.title}}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-6">
+    <h1 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400 mb-6">Регистрация</h1>
+
+    <!-- Error banner -->
+    <div id="error-banner"
+         class="hidden mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30
+                border border-red-200 dark:border-red-700
+                text-red-700 dark:text-red-400 text-sm">
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-6 flex flex-col gap-4">
+
+        <!-- Username -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Имя пользователя
+            </label>
+            <input id="username" type="text" required autocomplete="username"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        </div>
+
+        <!-- Password -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Пароль
+            </label>
+            <input id="password" type="password" required autocomplete="new-password"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        </div>
+
+        <!-- Birth date -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Дата рождения
+            </label>
+            <input id="birth_date" type="date" required
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        </div>
+
+        <!-- Sex -->
+        <div>
+            <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Пол</label>
+            <div class="flex gap-3">
+                <label class="flex-1 flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600
+                              rounded-xl py-2 cursor-pointer has-[:checked]:border-indigo-500
+                              has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-900/30
+                              has-[:checked]:text-indigo-700 dark:has-[:checked]:text-indigo-300
+                              text-gray-600 dark:text-gray-400 transition">
+                    <input type="radio" name="sex" value="M" required class="sr-only">
+                    <span>♂</span> Мужской
+                </label>
+                <label class="flex-1 flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600
+                              rounded-xl py-2 cursor-pointer has-[:checked]:border-indigo-500
+                              has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-900/30
+                              has-[:checked]:text-indigo-700 dark:has-[:checked]:text-indigo-300
+                              text-gray-600 dark:text-gray-400 transition">
+                    <input type="radio" name="sex" value="F" class="sr-only">
+                    <span>♀</span> Женский
+                </label>
+            </div>
+        </div>
+
+        <!-- Height -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Рост — <span id="height-val">170</span> см
+            </label>
+            <input id="height_cm" type="range" min="90" max="250" value="170"
+                   class="w-full accent-indigo-600">
+            <div class="flex justify-between text-xs text-gray-400 mt-1"><span>90</span><span>250</span></div>
+        </div>
+
+        <!-- Weight -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Вес — <span id="weight-val">70</span> кг
+            </label>
+            <input id="weight_kg" type="range" min="30" max="300" value="70"
+                   class="w-full accent-indigo-600">
+            <div class="flex justify-between text-xs text-gray-400 mt-1"><span>30</span><span>300</span></div>
+        </div>
+
+        <!-- Submit -->
+        <button id="submit-btn" type="button"
+                class="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50
+                       text-white font-semibold py-2.5 rounded-xl transition
+                       flex items-center justify-center gap-2">
+            <span id="submit-label">Зарегистрироваться</span>
+            <svg id="spinner" class="hidden animate-spin h-4 w-4 text-white"
+                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+        </button>
+
+        <p class="text-center text-sm text-gray-500 dark:text-gray-400">
+            Уже есть аккаунт?
+            <a href="/api/views/login" class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Войти</a>
+        </p>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Sliders
+    document.getElementById('height_cm').addEventListener('input', function() {
+        document.getElementById('height-val').textContent = this.value;
+    });
+    document.getElementById('weight_kg').addEventListener('input', function() {
+        document.getElementById('weight-val').textContent = this.value;
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+        const username   = document.getElementById('username').value.trim();
+        const password   = document.getElementById('password').value.trim();
+        const birth_date = document.getElementById('birth_date').value;
+        const sex        = document.querySelector('input[name="sex"]:checked')?.value;
+        const height_cm  = document.getElementById('height_cm').value;
+        const weight_kg  = document.getElementById('weight_kg').value;
+
+        if (!username || !password || !birth_date || !sex) {
+            showError('Пожалуйста, заполните все поля.');
+            return;
+        }
+
+        setLoading(true);
+        hideError();
+
+        try {
+            // 1. Регистрация — Form(), как требует @router.post("/signup")
+            const signupData = new URLSearchParams();
+            signupData.append('username',   username);
+            signupData.append('password',   password);
+            signupData.append('birth_date', birth_date);
+            signupData.append('sex',        sex);
+            signupData.append('height_cm',  height_cm);
+            signupData.append('weight_kg',  weight_kg);
+
+            const signupRes = await fetch('/api/v1/users/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: signupData
+            });
+
+            if (!signupRes.ok) {
+                const err = await signupRes.json().catch(() => ({}));
+                throw new Error(err.detail || `Ошибка регистрации (${signupRes.status})`);
+            }
+
+            // 2. Логин — OAuth2PasswordRequestForm, @router.post("/token")
+            const tokenData = new URLSearchParams();
+            tokenData.append('username', username);
+            tokenData.append('password', password);
+
+            const tokenRes = await fetch('/api/v1/users/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: tokenData
+            });
+
+            if (!tokenRes.ok) {
+                throw new Error('Регистрация прошла, но не удалось войти автоматически.');
+            }
+
+            const { access_token } = await tokenRes.json();
+
+            // 3. Сохраняем токен в cookie и переходим в личный кабинет
+            // SameSite=Strict — cookie передаётся автоматически при каждом запросе к серверу
+            document.cookie = `access_token=${access_token}; path=/; SameSite=Strict`;
+            window.location.href = '/api/views/me';
+
+        } catch (e) {
+            showError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    function setLoading(on) {
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = on;
+        document.getElementById('spinner').classList.toggle('hidden', !on);
+        document.getElementById('submit-label').textContent = on ? 'Подождите...' : 'Зарегистрироваться';
+    }
+
+    function showError(msg) {
+        const b = document.getElementById('error-banner');
+        b.textContent = msg;
+        b.classList.remove('hidden');
+    }
+
+    function hideError() {
+        document.getElementById('error-banner').classList.add('hidden');
+    }
+</script>
+{% endblock %}

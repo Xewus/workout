@@ -1,0 +1,13 @@
+{
+  "editor.fontLigatures": false,
+  "terminal.integrated.env.linux": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "python.envFile": "${workspaceFolder}/.env",
+  "cSpell.words": [
+    "appspecific",
+    "outerjoin",
+    "повт",
+    "подх"
+  ]
+}

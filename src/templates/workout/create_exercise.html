@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Новое упражнение — {{request.app.title}}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-6">
+
+    <div class="flex items-center gap-3 mb-6">
+        <a href="/api/views/exercises"
+           class="text-gray-400 hover:text-indigo-500 transition text-xl leading-none">←</a>
+        <h1 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">Новое упражнение</h1>
+    </div>
+
+    <!-- Error banner -->
+    <div id="form-error"
+         class="hidden mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30
+                border border-red-200 dark:border-red-700
+                text-red-700 dark:text-red-400 text-sm">
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100
+                dark:border-gray-700 p-6 flex flex-col gap-4">
+
+        <!-- Name -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Название <span class="text-red-500">*</span>
+            </label>
+            <input id="ex-name" type="text" placeholder="Жим штанги лёжа" required
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Описание <span class="text-red-500">*</span>
+            </label>
+            <textarea id="ex-desc" rows="3" placeholder="Техника выполнения, примечания..." required
+                      class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 transition resize-none">
+            </textarea>
+        </div>
+
+        <!-- Video URL -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Ссылка на видео
+            </label>
+            <input id="ex-video" type="url" placeholder="https://youtube.com/..."
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        </div>
+
+        <!-- Image -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Изображение
+            </label>
+            <label class="flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed
+                          border-gray-300 dark:border-gray-600 rounded-xl px-3 py-5 cursor-pointer
+                          hover:border-indigo-400 dark:hover:border-indigo-500 transition"
+                   id="image-label">
+                <span class="text-2xl">🖼️</span>
+                <span id="image-hint" class="text-xs text-gray-400 dark:text-gray-500">
+                    Нажмите, чтобы выбрать файл
+                </span>
+                <input id="ex-image" type="file" accept="image/*" class="hidden"
+                       onchange="onImageChange(this)">
+            </label>
+        </div>
+
+        <!-- Submit -->
+        <button id="submit-btn" type="button" onclick="submitExercise()"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50
+                       text-white font-semibold py-2.5 rounded-xl transition
+                       flex items-center justify-center gap-2">
+            <span id="submit-label">Сохранить</span>
+            <svg id="submit-spinner" class="hidden animate-spin h-4 w-4 text-white"
+                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+        </button>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function onImageChange(input) {
+        const hint = document.getElementById('image-hint');
+        hint.textContent = input.files[0] ? input.files[0].name : 'Нажмите, чтобы выбрать файл';
+    }
+
+    async function submitExercise() {
+        const name = document.getElementById('ex-name').value.trim();
+        const description = document.getElementById('ex-desc').value.trim();
+        const video_url = document.getElementById('ex-video').value.trim();
+        const imageFile = document.getElementById('ex-image').files[0];
+
+        if (!name) { showError('Пожалуйста, введите название упражнения.'); return; }
+        if (!description) { showError('Пожалуйста, введите описание.'); return; }
+
+        setLoading(true);
+        hideError();
+
+        try {
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('description', description);
+            if (video_url) formData.append('video_url', video_url);
+            if (imageFile)  formData.append('image', imageFile);
+
+            const res = await fetch('/api/v1/exercises/create', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${getToken()}` },
+                // Content-Type НЕ выставляем — браузер сам добавит boundary для multipart
+                body: formData
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `Ошибка (${res.status})`);
+            }
+
+            window.location.href = '/api/views/exercises';
+
+        } catch (e) {
+            showError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function getToken() {
+        return document.cookie
+            .split('; ')
+            .find(row => row.startsWith('access_token='))
+            ?.split('=')[1] ?? '';
+    }
+
+    function setLoading(on) {
+        document.getElementById('submit-btn').disabled = on;
+        document.getElementById('submit-spinner').classList.toggle('hidden', !on);
+        document.getElementById('submit-label').textContent = on ? 'Сохранение...' : 'Сохранить';
+    }
+
+    function showError(msg) {
+        const b = document.getElementById('form-error');
+        b.textContent = msg;
+        b.classList.remove('hidden');
+    }
+
+    function hideError() {
+        document.getElementById('form-error').classList.add('hidden');
+    }
+</script>
+{% endblock %}

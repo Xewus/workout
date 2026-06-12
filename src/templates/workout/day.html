@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <!-- Overview -->
+  <div id="overview-area" class="space-y-6">
+    <div class="flex justify-between items-center bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">План на {{ day.date }}</h1>
+        <p class="text-gray-500">{{ day.exercises|length }} упражнений сегодня</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="openAddExercise()"
+                class="bg-white border border-indigo-200 text-indigo-600 px-5 py-3 rounded-2xl font-bold hover:bg-indigo-50 transition">
+          + Упражнение
+        </button>
+        <button onclick="startWorkout()"
+                class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:scale-105 transition-transform">
+          СТАРТ
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Список упражнений</h3>
+      <div class="space-y-4">
+        {% for ex in day.exercises %}
+        <div class="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0">
+          <div class="flex items-center gap-4">
+            <span class="w-6 h-6 bg-gray-100 text-gray-500 text-xs flex items-center justify-center rounded-full font-bold">
+              {{ loop.index }}
+            </span>
+            <div>
+              <p class="font-bold text-gray-800">{{ ex.name }}</p>
+              <p class="text-xs text-gray-500">{{ ex.sets }} x {{ ex.reps }} | {{ ex.weight_kg }} кг</p>
+            </div>
+          </div>
+          <span class="text-xs text-gray-400">{{ ex.pause }}с отдых</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Active workout -->
+  <div id="active-exercise-area" class="hidden space-y-4">
+    <div class="bg-gray-800 text-white px-5 py-2 rounded-full font-mono text-xl shadow-inner flex items-center gap-2">
+      <span class="text-gray-400 text-sm italic">⏱</span>
+      <span id="workout-timer">00:00</span>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+      <img id="active-img" src="" class="w-full h-64 object-cover bg-gray-100">
+      <div class="p-6">
+        <div class="flex justify-between items-start mb-6">
+          <div>
+            <h2 id="active-name" class="text-2xl font-bold text-gray-900 leading-tight"></h2>
+            <p id="active-meta" class="text-indigo-600 font-bold mt-1"></p>
+          </div>
+          <div id="active-step" class="bg-gray-100 text-gray-500 px-3 py-1 rounded-lg font-mono text-xs"></div>
+        </div>
+
+        <div id="sets-list" class="space-y-3 mb-8"></div>
+
+        <div class="flex justify-between gap-4">
+          <button onclick="prevExercise()" class="flex-1 py-4 px-4 rounded-2xl bg-gray-100 text-gray-500 font-bold hover:bg-gray-200 transition">Назад</button>
+          <button id="next-btn" onclick="nextExercise()" class="flex-1 py-4 px-4 rounded-2xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-100">Далее</button>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="location.reload()" class="w-full mt-6 text-gray-400 text-sm font-medium hover:text-gray-600">
+      ✕ Отменить и вернуться к списку
+    </button>
+  </div>
+
+  <input type="hidden" id="raw-data" value='{{ day | tojson }}'>
+
+  <!-- Add Exercise Modal -->
+  <div id="add-exercise-modal"
+       class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Добавить упражнение</h2>
+        <button onclick="closeAddExercise()"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">✕</button>
+      </div>
+
+      <!-- Search -->
+      <input id="exercise-search" type="text" placeholder="Начните вводить название..."
+             oninput="onSearchInput(this.value)"
+             class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                    bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                    focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+
+      <!-- Results -->
+      <div id="search-results" class="flex flex-col gap-2 max-h-48 overflow-y-auto">
+        <p class="text-sm text-gray-400 text-center py-4">Введите название для поиска</p>
+      </div>
+
+      <!-- Params form -->
+      <div id="ex-params" class="hidden flex-col gap-3 border-t border-gray-100 dark:border-gray-700 pt-4">
+        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          Параметры: <span id="ex-params-name" class="text-indigo-600"></span>
+        </p>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium mb-1 text-gray-500">Порядок в дне *</label>
+            <input id="p-place" type="number" min="1" value="1"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1 text-gray-500">Подходы *</label>
+            <input id="p-sets" type="number" min="1" value="3"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1 text-gray-500">Повторения *</label>
+            <input id="p-reps" type="number" min="1" value="10"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1 text-gray-500">Вес (кг)</label>
+            <input id="p-weight" type="number" min="0" placeholder="—"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-medium mb-1 text-gray-500">Пауза между подходами (сек)</label>
+            <input id="p-pause" type="number" min="0" placeholder="—"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm">
+          </div>
+        </div>
+
+        <button onclick="submitExerciseToDay()"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold
+                       py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+          <span id="add-ex-label">Добавить в тренировку</span>
+          <svg id="add-ex-spinner" class="hidden animate-spin h-4 w-4 text-white"
+               xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Error -->
+      <div id="add-ex-error"
+           class="hidden px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30
+                  border border-red-200 dark:border-red-700
+                  text-red-700 dark:text-red-400 text-sm">
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let dayData = JSON.parse(document.getElementById('raw-data').value);
+  let currentIndex = 0;
+  let completedSets = {};
+  let startTime;
+  let timerInterval;
+  let selectedExerciseId = null;
+  let searchTimeout = null;
+
+  // ─── Modal ───────────────────────────────────────────────
+
+  function openAddExercise() {
+    selectedExerciseId = null;
+    document.getElementById('exercise-search').value = '';
+    document.getElementById('search-results').innerHTML =
+      '<p class="text-sm text-gray-400 text-center py-4">Введите название для поиска</p>';
+    document.getElementById('ex-params').classList.add('hidden');
+    document.getElementById('ex-params').classList.remove('flex');
+    document.getElementById('add-ex-error').classList.add('hidden');
+    document.getElementById('add-exercise-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('exercise-search').focus(), 50);
+  }
+
+  function closeAddExercise() {
+    document.getElementById('add-exercise-modal').classList.add('hidden');
+  }
+
+  document.getElementById('add-exercise-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeAddExercise();
+  });
+
+  function onSearchInput(value) {
+    clearTimeout(searchTimeout);
+    const q = value.trim();
+    if (!q) {
+      document.getElementById('search-results').innerHTML =
+        '<p class="text-sm text-gray-400 text-center py-4">Введите название для поиска</p>';
+      return;
+    }
+    searchTimeout = setTimeout(() => fetchExercises(q), 300);
+  }
+
+  async function fetchExercises(query) {
+    const container = document.getElementById('search-results');
+    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Поиск...</p>';
+
+    try {
+      const res = await fetch(`/api/v1/exercises/search?string=${encodeURIComponent(query)}`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (!res.ok) throw new Error(`Ошибка (${res.status})`);
+
+      const exercises = await res.json();
+
+      if (!exercises.length) {
+        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Ничего не найдено</p>';
+        return;
+      }
+
+      container.innerHTML = exercises.map(ex => `
+        <div onclick="selectExercise(${ex.id}, '${ex.name.replace(/'/g, "\\'")}')"
+             class="flex items-center gap-3 p-3 rounded-xl border border-gray-100
+                    hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition">
+          <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center
+                      text-xl flex-shrink-0 overflow-hidden">
+            ${ex.image_path
+              ? `<img src="/static/uploads/${ex.image_path.split('/').pop()}" class="w-full h-full object-cover">`
+              : '🏋️'}
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="font-semibold text-gray-900 text-sm leading-tight">${ex.name}</span>
+            ${ex.description
+              ? `<span class="text-xs text-gray-400 truncate">${ex.description}</span>`
+              : ''}
+          </div>
+        </div>
+      `).join('');
+
+    } catch (e) {
+      container.innerHTML = `<p class="text-sm text-red-400 text-center py-4">${e.message}</p>`;
+    }
+  }
+
+  function selectExercise(id, name) {
+    selectedExerciseId = id;
+    document.getElementById('exercise-search').value = name;
+    document.getElementById('search-results').innerHTML = '';
+    document.getElementById('ex-params-name').textContent = name;
+    document.getElementById('ex-params').classList.remove('hidden');
+    document.getElementById('ex-params').classList.add('flex');
+  }
+
+  async function submitExerciseToDay() {
+    if (!selectedExerciseId) return;
+
+    const place_in_day = parseInt(document.getElementById('p-place').value);
+    const sets         = parseInt(document.getElementById('p-sets').value);
+    const reps         = parseInt(document.getElementById('p-reps').value);
+    const weight_kg    = document.getElementById('p-weight').value ? parseInt(document.getElementById('p-weight').value) : null;
+    const pause        = document.getElementById('p-pause').value  ? parseInt(document.getElementById('p-pause').value)  : null;
+
+    if (!place_in_day || !sets || !reps) {
+      showAddError('Заполните обязательные поля: порядок, подходы, повторения.');
+      return;
+    }
+
+    document.getElementById('add-ex-spinner').classList.remove('hidden');
+    document.getElementById('add-ex-label').textContent = 'Сохранение...';
+    document.getElementById('add-ex-error').classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/v1/plans/add-exercise-to-day', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          day_id: dayData.day_id,
+          exercise_id: selectedExerciseId,
+          place_in_day,
+          sets,
+          reps,
+          weight_kg,
+          pause
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Ошибка (${res.status})`);
+      }
+
+      closeAddExercise();
+      window.location.reload();
+
+    } catch (e) {
+      showAddError(e.message);
+    } finally {
+      document.getElementById('add-ex-spinner').classList.add('hidden');
+      document.getElementById('add-ex-label').textContent = 'Добавить в тренировку';
+    }
+  }
+
+  function showAddError(msg) {
+    const b = document.getElementById('add-ex-error');
+    b.textContent = msg;
+    b.classList.remove('hidden');
+  }
+
+  // ─── Workout ─────────────────────────────────────────────
+
+  function startWorkout() {
+    document.getElementById('overview-area').classList.add('hidden');
+    document.getElementById('active-exercise-area').classList.remove('hidden');
+
+    startTime = Date.now();
+    timerInterval = setInterval(updateTimer, 1000);
+
+    dayData.exercises.forEach(ex => {
+      if (!completedSets[ex.id]) {
+        completedSets[ex.id] = new Array(ex.sets).fill(false);
+      }
+    });
+
+    showExercise(0);
+    window.scrollTo(0, 0);
+  }
+
+  function updateTimer() {
+    const diff = Date.now() - startTime;
+    const m = Math.floor(diff / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('workout-timer').innerText =
+      (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }
+
+  function showExercise(index) {
+    currentIndex = index;
+    const ex = dayData.exercises[index];
+
+    document.getElementById('active-img').src = ex.image_path ? `/${ex.image_path}` : '';
+    document.getElementById('active-name').innerText = ex.name;
+    document.getElementById('active-meta').innerText = `${ex.weight_kg ?? '—'} кг • ${ex.pause ?? '—'}с отдых`;
+    document.getElementById('active-step').innerText = `${index + 1} / ${dayData.exercises.length}`;
+
+    const setsContainer = document.getElementById('sets-list');
+    setsContainer.innerHTML = '';
+    for (let i = 0; i < ex.sets; i++) {
+      const isDone = completedSets[ex.id][i];
+      setsContainer.innerHTML += `
+        <div onclick="toggleSet(${i})"
+             class="flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-200
+                    ${isDone ? 'border-green-500 bg-green-50' : 'border-gray-100 bg-white hover:border-indigo-200'}">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                        ${isDone ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}">
+              ${isDone ? '✓' : i + 1}
+            </div>
+            <span class="font-bold ${isDone ? 'text-green-700' : 'text-gray-700'}">Подход ${i + 1}</span>
+          </div>
+          <span class="font-medium ${isDone ? 'text-green-600' : 'text-gray-400'}">${ex.reps} повт.</span>
+        </div>`;
+    }
+
+    document.getElementById('next-btn').innerText =
+      currentIndex === dayData.exercises.length - 1 ? 'Завершить' : 'Далее';
+  }
+
+  function toggleSet(setIndex) {
+    const exId = dayData.exercises[currentIndex].id;
+    completedSets[exId][setIndex] = !completedSets[exId][setIndex];
+    showExercise(currentIndex);
+  }
+
+  function nextExercise() {
+    if (currentIndex < dayData.exercises.length - 1) {
+      showExercise(currentIndex + 1);
+      window.scrollTo(0, 0);
+    } else {
+      clearInterval(timerInterval);
+      const totalTime = document.getElementById('workout-timer').innerText;
+      alert(`Поздравляем! Тренировка завершена.\nОбщее время: ${totalTime}`);
+      location.href = '/';
+    }
+  }
+
+  function prevExercise() {
+    if (currentIndex > 0) {
+      showExercise(currentIndex - 1);
+      window.scrollTo(0, 0);
+    }
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────
+
+  function getToken() {
+    return document.cookie
+      .split('; ')
+      .find(row => row.startsWith('access_token='))
+      ?.split('=')[1] ?? '';
+  }
+</script>
+{% endblock %}

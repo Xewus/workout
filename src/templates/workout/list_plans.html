@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Планы — {{request.app.title}}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-6">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">Планы тренировок</h1>
+        <div class="flex items-center gap-3">
+            <!-- Кнопка создать план -->
+            <a href="/api/views/plans/create"
+               class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold
+                      px-4 py-2 rounded-xl transition">
+                + Создать
+            </a>
+
+            <!-- "Только мои" toggle -->
+            <div class="flex items-center gap-2 select-none">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Только мои</span>
+                <div id="toggle" class="relative w-10 h-6 rounded-full cursor-pointer"
+                     style="background:#d1d5db; transition: background 0.2s;">
+                    <div id="thumb" class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow"
+                         style="transition: transform 0.2s;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plans list -->
+    <div class="flex flex-col gap-3">
+        {% for plan in plans %}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow px-5 py-4
+                    hover:shadow-md transition cursor-pointer
+                    border border-transparent hover:border-indigo-200 dark:hover:border-indigo-700"
+             onclick="window.location.href='/api/views/plans/{{ plan.id }}'">
+            <div class="font-semibold text-gray-900 dark:text-gray-100">{{ plan.title }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ plan.description }}</div>
+        </div>
+        {% else %}
+        <div class="text-center py-16 text-gray-400 dark:text-gray-500">
+            <div class="text-4xl mb-3">📋</div>
+            <div class="text-sm">Планов пока нет</div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const toggle = document.getElementById('toggle');
+    const thumb  = document.getElementById('thumb');
+
+    const params = new URLSearchParams(window.location.search);
+    let active = params.has('only_mine');
+
+    function render() {
+        toggle.style.background = active ? '#4f46e5' : '#d1d5db';
+        thumb.style.transform   = active ? 'translateX(16px)' : 'translateX(0)';
+    }
+
+    render();
+
+    toggle.addEventListener('click', () => {
+        active = !active;
+        render();
+
+        const url = new URL(window.location.href);
+        if (active) {
+            url.searchParams.set('only_mine', '1');
+        } else {
+            url.searchParams.delete('only_mine');
+        }
+        window.location.href = url.toString();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Новый план — {{request.app.title}}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-6">
+    <h1 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400 mb-6">Новый план</h1>
+
+    <!-- Error banner -->
+    <div id="error-banner"
+         class="hidden mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30
+                border border-red-200 dark:border-red-700
+                text-red-700 dark:text-red-400 text-sm">
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow p-6 flex flex-col gap-4">
+
+        <!-- Title -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Название <span class="text-red-500">*</span>
+            </label>
+            <input id="title" type="text" required autocomplete="off" placeholder="Например: Сила — 3 дня в неделю"
+                   class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                          bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                          placeholder-gray-400 dark:placeholder-gray-500
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                Описание <span class="text-gray-400 font-normal">(необязательно)</span>
+            </label>
+            <textarea id="description" rows="4" autocomplete="off"
+                      placeholder="Цели, особенности, заметки..."
+                      class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+                             bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                             placeholder-gray-400 dark:placeholder-gray-500
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 transition
+                             resize-none"></textarea>
+        </div>
+
+        <!-- Submit -->
+        <button id="submit-btn" type="button"
+                class="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50
+                       text-white font-semibold py-2.5 rounded-xl transition
+                       flex items-center justify-center gap-2">
+            <span id="submit-label">Сохранить план</span>
+            <svg id="spinner" class="hidden animate-spin h-4 w-4 text-white"
+                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+            </svg>
+        </button>
+
+        <p class="text-center text-sm text-gray-500 dark:text-gray-400">
+            <a href="/api/views/plans" class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">← Все планы</a>
+        </p>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) document.getElementById('submit-btn').click();
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+        const title       = document.getElementById('title').value.trim();
+        const description = document.getElementById('description').value.trim();
+
+        if (!title) {
+            showError('Пожалуйста, укажите название плана.');
+            return;
+        }
+
+        setLoading(true);
+        hideError();
+
+        try {
+
+            const res = await fetch(`/api/v1/workout/plans/create`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, description: description || null })
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || `Ошибка при создании плана (${res.status})`);
+            }
+
+            const planId = await res.json();
+            window.location.href = `/api/views/plans/${planId}`;
+
+        } catch (e) {
+            showError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    function getToken() {
+        return document.cookie
+            .split('; ')
+            .find(row => row.startsWith('access_token='))
+            ?.split('=')[1] ?? '';
+    }
+
+    function setLoading(on) {
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = on;
+        document.getElementById('spinner').classList.toggle('hidden', !on);
+        document.getElementById('submit-label').textContent = on ? 'Создаём...' : 'Создать план';
+    }
+
+    function showError(msg) {
+        const b = document.getElementById('error-banner');
+        b.textContent = msg;
+        b.classList.remove('hidden');
+    }
+
+    function hideError() {
+        document.getElementById('error-banner').classList.add('hidden');
+    }
+</script>
+{% endblock %}

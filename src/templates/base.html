@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{request.app.title}}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <style>
+        .active-nav { border-bottom: 2px solid white; }
+
+        /* Smooth theme transition */
+        body, nav, footer { transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+
+        /* Toggle switch */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-track {
+            width: 36px;
+            height: 20px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 999px;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .toggle-thumb {
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 14px; height: 14px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        html.dark .toggle-track { background: rgba(255,255,255,0.35); }
+        html.dark .toggle-thumb { transform: translateX(16px); }
+    </style>
+    <script>
+        // Apply saved theme before render to avoid flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = theme;
+        })();
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans text-gray-900 dark:text-gray-100">
+
+    <nav class="bg-indigo-700 dark:bg-indigo-900 text-white shadow-md mb-6">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="/" class="text-xl font-bold tracking-tight">{{request.app.title}}</a>
+            <div class="flex items-center gap-4">
+                <a href="/api/views/plans" class="hover:text-indigo-200 transition">Планы</a>
+                <a href="/api/views/exercises" class="hover:text-indigo-200 transition">Упражнения</a>
+                <a href="/api/views/users/me" class="hover:text-indigo-200 transition">Профиль</a>
+
+                <!-- Theme toggle -->
+                <label class="theme-toggle" title="Сменить тему">
+                    <span class="text-sm select-none" id="theme-icon">🌙</span>
+                    <div class="toggle-track">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                    <input type="checkbox" id="theme-checkbox" class="sr-only">
+                </label>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 pb-20">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="fixed bottom-0 w-full bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-3 flex justify-around md:hidden">
+        <button class="text-indigo-600 dark:text-indigo-400">🏠 План</button>
+        <button class="text-gray-400 dark:text-gray-500">📊 Прогресс</button>
+        <button class="text-gray-400 dark:text-gray-500">👤 Профиль</button>
+    </footer>
+
+    <script>
+        const html = document.documentElement;
+        const checkbox = document.getElementById('theme-checkbox');
+        const icon = document.getElementById('theme-icon');
+
+        function applyTheme(theme) {
+            html.className = theme;
+            checkbox.checked = (theme === 'dark');
+            icon.textContent = (theme === 'dark') ? '☀️' : '🌙';
+            localStorage.setItem('theme', theme);
+        }
+
+        // Init from saved
+        applyTheme(localStorage.getItem('theme') || 'light');
+
+        checkbox.addEventListener('change', () => {
+            applyTheme(checkbox.checked ? 'dark' : 'light');
+        });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

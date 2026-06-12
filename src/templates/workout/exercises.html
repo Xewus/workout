@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Упражнения — {{request.app.title}}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-6 flex flex-col gap-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">Упражнения</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Библиотека упражнений</p>
+        </div>
+        <a href="/api/views/exercises/create"
+           class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold
+                  px-4 py-2 rounded-xl transition whitespace-nowrap">
+            + Упражнение
+        </a>
+    </div>
+
+    <!-- Exercise list -->
+    {% if exercises %}
+    <div class="grid gap-3"
+         style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+
+        {% for ex in exercises %}
+        <div class="rounded-2xl border-2 border-gray-100 dark:border-gray-700
+            bg-white dark:bg-gray-800 p-4 flex flex-col gap-2
+            cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition"
+            onclick="window.location.href='/api/views/exercises/{{ ex.id }}'">
+
+            <span class="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+                {{ ex.name }}
+            </span>
+
+            {% if ex.description %}
+            <span class="text-xs text-gray-400 dark:text-gray-500 leading-snug line-clamp-3">
+                {{ ex.description }}
+            </span>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+    <div class="col-span-full text-center py-16 text-gray-400 dark:text-gray-500">
+        <div class="text-4xl mb-3">🏋️</div>
+        <div class="text-sm">Упражнений пока нет. Добавьте первое!</div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

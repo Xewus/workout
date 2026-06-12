@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}{{ plan.title }} — {{request.app.title}}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto mt-6 flex flex-col gap-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{{ plan.title }}</h1>
+      <p class="text-gray-500 dark:text-gray-400 mt-1">{{ plan.description }}</p>
+    </div>
+    <button onclick="openModal()"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold
+             px-4 py-2 rounded-xl transition whitespace-nowrap">
+      + Тренировка
+    </button>
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="grid gap-3"
+     style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+
+    {% for date_str, day in plan['days'] | dictsort %}
+    {% set is_today = (date_str == today_date) %}
+
+    <div class="rounded-2xl border-2 p-4 flex flex-col gap-2 cursor-pointer
+          {% if is_today %}
+            border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30
+          {% else %}
+            border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800
+          {% endif %}"
+      onclick="window.location.href='/api/views/plans/{{ plan.id }}/{{ date_str }}'">
+
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-xs font-semibold uppercase tracking-wide
+               {% if is_today %}text-indigo-600 dark:text-indigo-400
+               {% else %}text-gray-400 dark:text-gray-500{% endif %}">
+          {{ date_str | format_date }}
+        </span>
+        {% if is_today %}
+        <span class="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+          Сегодня
+        </span>
+        {% endif %}
+      </div>
+
+      {% for ex in day.exercises %}
+      <div class="flex flex-col text-sm border-t border-gray-100 dark:border-gray-700 pt-2 first:border-0 first:pt-0">
+        <span class="font-medium text-gray-900 dark:text-gray-100 leading-tight">
+          {{ ex.name }}
+        </span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+          {{ ex.sets }} подх. × {{ ex.reps }} повт.
+          {%- if ex.weight_kg is defined and ex.weight_kg %} · {{ ex.weight_kg }} кг{% endif %}
+          {%- if ex.pause is defined and ex.pause %} · {{ ex.pause }}с пауза{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+
+    </div>
+
+    {% else %}
+    <div class="col-span-full text-center py-16 text-gray-400 dark:text-gray-500">
+      <div class="text-4xl mb-3">🗓️</div>
+      <div class="text-sm">Дни тренировок не добавлены</div>
+    </div>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div id="modal"
+   class="hidden fixed inset-0 z-50 flex items-center justify-center
+      bg-black/40 backdrop-blur-sm px-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm flex flex-col gap-4">
+
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Новая тренировка</h2>
+      <button onclick="closeModal()"
+          class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none">
+        ✕
+      </button>
+    </div>
+
+    <!-- Error banner -->
+    <div id="modal-error"
+       class="hidden px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/30
+          border border-red-200 dark:border-red-700
+          text-red-700 dark:text-red-400 text-sm">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+        Дата тренировки
+      </label>
+      <input id="workout-date" type="date" required
+           class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2
+              bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+              focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+    </div>
+
+    <button id="modal-submit" type="button" onclick="submitDay()"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50
+             text-white font-semibold py-2.5 rounded-xl transition
+             flex items-center justify-center gap-2">
+      <span id="modal-label">Добавить</span>
+      <svg id="modal-spinner" class="hidden animate-spin h-4 w-4 text-white"
+         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+      </svg>
+    </button>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const PLAN_ID = parseInt(window.location.pathname.split('/').pop());
+
+  function openModal() {
+    // Подставляем сегодняшнюю дату по умолчанию
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('workout-date').value = today;
+    document.getElementById('modal-error').classList.add('hidden');
+    document.getElementById('modal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+  }
+
+  // Закрытие по клику на backdrop
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  async function submitDay() {
+    const date = document.getElementById('workout-date').value;
+
+    if (!date) {
+      showModalError('Пожалуйста, выберите дату.');
+      return;
+    }
+
+    setLoading(true);
+    hideModalError();
+
+    try {
+      const res = await fetch('/api/v1/plans/workout_day', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ date, plan_id: PLAN_ID })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Ошибка (${res.status})`);
+      }
+
+      // Перезагружаем страницу чтобы показать новый день
+      window.location.reload();
+
+    } catch (e) {
+      showModalError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getToken() {
+    return document.cookie
+      .split('; ')
+      .find(row => row.startsWith('access_token='))
+      ?.split('=')[1] ?? '';
+  }
+
+  function setLoading(on) {
+    document.getElementById('modal-submit').disabled = on;
+    document.getElementById('modal-spinner').classList.toggle('hidden', !on);
+    document.getElementById('modal-label').textContent = on ? 'Подождите...' : 'Добавить';
+  }
+
+  function showModalError(msg) {
+    const b = document.getElementById('modal-error');
+    b.textContent = msg;
+    b.classList.remove('hidden');
+  }
+
+  function hideModalError() {
+    document.getElementById('modal-error').classList.add('hidden');
+  }
+</script>
+{% endblock %}
