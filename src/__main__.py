@@ -1,7 +1,9 @@
+from collections.abc import AsyncGenerator, Awaitable, Callable
 import datetime as dt
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import uvicorn
 from fastapi import FastAPI, Request, Response, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -14,7 +16,7 @@ templates = Jinja2Templates(directory=Path("src/templates"))
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
@@ -34,10 +36,10 @@ setattr(app, "templates", templates)
 
 
 @app.middleware("http")
-async def add_process_404(request: Request, call_next):
+async def add_process_404(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """Промежуточное ПО для обработки 404 ошибок и отображения кастомной страницы."""
     try:
-        response: Response = await call_next(request)
+        response = await call_next(request)
     except Exception as e:
         print(f"Error processing request: {e}")
         return templates.TemplateResponse("500.html", {"request": request}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -54,6 +56,14 @@ async def add_process_404(request: Request, call_next):
     return response
 
 def format_date_filter(value: str) -> str:
+    """Переформатирование даты в текстовый вид.
+
+    Args:
+        value (str): Дата в формате ISO.
+
+    Returns:
+        str: Текстовое представление даты.
+    """
     d = dt.date.fromisoformat(value)
     months = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"]
     days   = ["пн","вт","ср","чт","пт","сб","вс"]
@@ -62,3 +72,6 @@ def format_date_filter(value: str) -> str:
 
 templates.env.filters["basename"] = lambda p: Path(p).name
 templates.env.filters["format_date"] = format_date_filter
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

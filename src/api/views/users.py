@@ -21,6 +21,7 @@ def signup(request: ApiRequest):
 @router.get("/login")
 def login(request: ApiRequest):
     """Страница входа."""
+    print(ApiRequest.headers)
     return request.app.templates.TemplateResponse(UserPages.LOGIN.value, {"request": request})
 
 @router.get("/me")
