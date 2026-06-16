@@ -37,28 +37,28 @@ async def add_exercise(
         exercise.image_path = str(file_path)
 
     # Добавляем упражнение в базу данных
-    err = db.workout.create_exercise(exercise)
+    err = await db.workout.create_exercise(exercise)
     if err:
         raise HTTPException(status_code=400, detail=err)
 
     return {"info": f"Упражнение {exercise.name} добавлено с ID {exercise.id}"}
 
 @exercises_router.get("/search")
-def search_exercise(db: DbDep, string: Annotated[str, Query()]):
+async def search_exercise(db: DbDep, string: Annotated[str, Query()]):
     print(string)
-    return db.workout.search_exercise_by_name(string)
+    return await db.workout.search_exercise_by_name(string)
 
 
 @exercises_router.get("")
 async def list_exercises(*, db: DbDep, offset: int = 0, limit: int = 10):
     """Получить список упражнений."""
-    exercises = db.workout.get_exercises(offset=offset, limit=limit)
+    exercises = await db.workout.get_exercises(offset=offset, limit=limit)
     return exercises
 
 @exercises_router.get("/{exercise_id}")
 async def get_exercise(db: DbDep, exercise_id: int):
     """Получить упражнение по идентификатору."""
-    exercise = db.workout.get_exercise_by_id(exercise_id)
+    exercise = await db.workout.get_exercise_by_id(exercise_id)
     if not exercise:
         return {"error": "Упражнение не найдено"}
     return exercise

@@ -21,9 +21,9 @@ def hash_password(password: bytes | str) -> str:
     return password_hash.hash(password)
 
     
-def authenticate_user(db: Db, username: str, password: str) -> UserModel | None:
+async def authenticate_user(db: Db, username: str, password: str) -> UserModel | None:
     """Проверка наличия пользователя с данным именем и паролем в БД."""
-    if not (user := db.user.get_by_username(username)):
+    if not (user := await db.user.get_by_username(username)):
         return None
 
     if not password_hash.verify(password, user.hashed_password):
@@ -38,7 +38,7 @@ def create_jwt(user: UserModel) -> str:
 
     return jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.ALGORITHM)
 
-def _get_user_by_token(db: Db, token: str) -> UserModel:
+async def _get_user_by_token(db: Db, token: str) -> UserModel:
     """Получение пользователя по JWT-токену."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,18 +53,18 @@ def _get_user_by_token(db: Db, token: str) -> UserModel:
     except InvalidTokenError:
         raise credentials_exception
 
-    user = db.user.get_by_username(username)
+    user = await db.user.get_by_username(username)
     if user is None:
         raise credentials_exception
 
     return user
 
-def get_cookie_user(db: Annotated[Db, Depends(get_db)], access_token: Annotated[str | None, Cookie()] = None) -> UserModel:
+async def get_cookie_user(db: Annotated[Db, Depends(get_db)], access_token: Annotated[str | None, Cookie()] = None) -> UserModel:
     """Определение пользователя по JWT-токену из cookie."""
     if not access_token:
         raise HTTPException(status_code=401, detail="Токен не найден в cookie.")
-    return _get_user_by_token(db, access_token)
+    return await _get_user_by_token(db, access_token)
 
-def get_jwt_user(db: Annotated[Db, Depends(get_db)], token: Annotated[str, Depends(oauth2_scheme)]) -> UserModel:
+async def get_jwt_user(db: Annotated[Db, Depends(get_db)], token: Annotated[str, Depends(oauth2_scheme)]) -> UserModel:
     """Определение пользователя по JWT-токену"""
-    return _get_user_by_token(db, token)
+    return await _get_user_by_token(db, token)
