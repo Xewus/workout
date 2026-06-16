@@ -18,7 +18,19 @@ plans_router = APIRouter()
 
 @plans_router.post("/create")
 async def create_plan(db: DbDep, user: UserCookieDep, data: CreatePlanDTO) -> int:
-    """Создать новый тренировочный план."""
+    """Создать новый тренировочный план для текущего пользователя.
+
+    Args:
+        db (Db): Контейнер репозиториев.
+        user (UserModel): Текущий пользователь-владелец плана.
+        data (CreatePlanDTO): Данные создаваемого плана.
+
+    Returns:
+        int: Идентификатор созданного плана.
+
+    Raises:
+        HTTPException: 400, если план не удалось создать.
+    """
     model = WorkoutPlanModel(title=data.title, description=data.description or "", user_id=user.id)
     if err := await db.workout.create_plan(model):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err)
@@ -34,8 +46,16 @@ async def create_plan(db: DbDep, user: UserCookieDep, data: CreatePlanDTO) -> in
 
 
 @plans_router.post("/workout_day")
-async def create_workout_day(db: DbDep, data: CreateDayDTO):
-    """Создать новый день тренировки для конкретного плана."""
+async def create_workout_day(db: DbDep, data: CreateDayDTO) -> str | None:
+    """Создать новый день тренировки для конкретного плана.
+
+    Args:
+        db (Db): Контейнер репозиториев.
+        data (CreateDayDTO): Данные создаваемого дня тренировки.
+
+    Returns:
+        str | None: Текст ошибки при неудаче, иначе ``None``.
+    """
     workout_day = await db.workout.create_workday(WorkoutDayModel(**data.model_dump()))
     return workout_day
 
@@ -51,7 +71,16 @@ async def create_workout_day(db: DbDep, data: CreateDayDTO):
 #     return db.workout.get_full_plan_by_id(plan_id)
 
 @plans_router.post("/add-exercise-to-day")
-async def add_exercise_to_workout_day(db: DbDep, data: AddExerciseDTO):
+async def add_exercise_to_workout_day(db: DbDep, data: AddExerciseDTO) -> dict[str, str]:
+    """Добавить упражнение в день тренировки.
+
+    Args:
+        db (Db): Контейнер репозиториев.
+        data (AddExerciseDTO): Связь упражнения с днём и его параметры.
+
+    Returns:
+        dict[str, str]: Сообщение об успехе либо об ошибке (день/упражнение не найдены).
+    """
     workout_day = await db.workout.get_workday_by_id(data.day_id)
     print(f"{workout_day=}")
     if not workout_day:

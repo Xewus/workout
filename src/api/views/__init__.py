@@ -1,3 +1,4 @@
+"""Сборка роутера HTML-страниц из представлений упражнений, планов и пользователей."""
 from fastapi import APIRouter
 
 from .exercises import exercises_router

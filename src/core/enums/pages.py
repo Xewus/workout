@@ -2,6 +2,8 @@ from enum import StrEnum
 
 
 class WorkoutPages(StrEnum):
+    """Пути к HTML-шаблонам, связанным с тренировками."""
+
     CREATE_EXERCISE = "workout/create_exercise.html"
     CREATE_PLAN = "workout/create_plan.html"
     DAY = "workout/day.html"
@@ -11,6 +13,8 @@ class WorkoutPages(StrEnum):
     PLANS = "workout/list_plans.html"
 
 class UserPages(StrEnum):
+    """Пути к HTML-шаблонам, связанным с пользователями."""
+
     LOGIN = "users/login.html"
     PROFILE = "users/profile.html"
     SIGNUP = "users/signup.html"
