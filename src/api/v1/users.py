@@ -13,11 +13,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 @router.post("/signup")
-def signup(data: Annotated[UserDTO, Form()], db: DbDep):
+async def signup(data: Annotated[UserDTO, Form()], db: DbDep):
     """Регистрация нового пользователя."""
     hashed_pass=hash_password(data.password)
     user = UserModel(hashed_password = hashed_pass, **data.model_dump(exclude={"password"}))
-    if err := db.user.create(user):
+    if err := await db.user.create(user):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err)
 
     return {"message": f"Пользователь {user.username} успешно зарегистрирован!"}
@@ -29,7 +29,7 @@ async def get_access_token(
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> TokenDTO:
     """Получение JWT-токена по имени пользователя и паролю."""
-    if not (user := authenticate_user(db, form.username, form.password)):
+    if not (user := await authenticate_user(db, form.username, form.password)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Пользователь с таким именем и паролем не найден.",

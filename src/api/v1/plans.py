@@ -20,7 +20,7 @@ plans_router = APIRouter()
 async def create_plan(db: DbDep, user: UserCookieDep, data: CreatePlanDTO) -> int:
     """Создать новый тренировочный план."""
     model = WorkoutPlanModel(title=data.title, description=data.description or "", user_id=user.id)
-    if err := db.workout.create_plan(model):
+    if err := await db.workout.create_plan(model):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err)
 
     return model.id
@@ -36,7 +36,7 @@ async def create_plan(db: DbDep, user: UserCookieDep, data: CreatePlanDTO) -> in
 @plans_router.post("/workout_day")
 async def create_workout_day(db: DbDep, data: CreateDayDTO):
     """Создать новый день тренировки для конкретного плана."""
-    workout_day = db.workout.create_workday(WorkoutDayModel(**data.model_dump()))
+    workout_day = await db.workout.create_workday(WorkoutDayModel(**data.model_dump()))
     return workout_day
 
 # @plans_router.get("/{plan_id}")
@@ -52,16 +52,16 @@ async def create_workout_day(db: DbDep, data: CreateDayDTO):
 
 @plans_router.post("/add-exercise-to-day")
 async def add_exercise_to_workout_day(db: DbDep, data: AddExerciseDTO):
-    workout_day = db.workout.get_workday_by_id(data.day_id)
+    workout_day = await db.workout.get_workday_by_id(data.day_id)
     print(f"{workout_day=}")
     if not workout_day:
         return {"error": "День тренировки не найден"}
     
-    exercise = db.workout.get_exercise_by_id(data.  exercise_id)
+    exercise = await db.workout.get_exercise_by_id(data.  exercise_id)
     print(f"{exercise=}")
     if not exercise:
         return {"error": "Упражнение не найдено"}
     
-    db.workout.add_exercise_to_workday(ExerciseInDayModel(**data.model_dump()))
+    await db.workout.add_exercise_to_workday(ExerciseInDayModel(**data.model_dump()))
     
     return {"info": f"Упражнение {exercise.name} добавлено к дню тренировки {workout_day.date}"}

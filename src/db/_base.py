@@ -1,9 +1,14 @@
-from collections.abc import Generator
-from contextlib import contextmanager
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Self
 
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import DeclarativeBase, Session
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
@@ -15,17 +20,20 @@ class Base(DeclarativeBase):
 
 
 sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+sqlite_url = f"sqlite+aiosqlite:///{sqlite_file_name}"
 
-engine = create_engine(sqlite_url, echo=True)
+engine = create_async_engine(sqlite_url, echo=True)
 
 
 class _DbConnector:
-    def __init__(self: Self, engine: Engine) -> None:
+    def __init__(self: Self, engine: AsyncEngine) -> None:
         self.engine = engine
+        self.session_factory = async_sessionmaker(
+            engine, expire_on_commit=False
+        )
         return None
-    
-    @contextmanager
-    def connect(self: Self) -> Generator[Session]:
-        with Session(self.engine) as session:
+
+    @asynccontextmanager
+    async def connect(self: Self) -> AsyncGenerator[AsyncSession]:
+        async with self.session_factory() as session:
             yield session

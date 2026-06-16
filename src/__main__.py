@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from src.api import main_router as router
 from src.config import config
+from src.db import init_db
 
 
 templates = Jinja2Templates(directory=Path("src/templates"))
@@ -17,6 +18,7 @@ templates = Jinja2Templates(directory=Path("src/templates"))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    await init_db()
     yield
 
 

@@ -14,7 +14,7 @@ exercises_router = APIRouter()
 
 @exercises_router.get("")
 async def exercises(request: ApiRequest,  db: DbDep, user: UserCookieDep, offset: int = 0, limit: int = 10):
-    exercises = db.workout.get_exercises(offset=offset, limit=limit)
+    exercises = await db.workout.get_exercises(offset=offset, limit=limit)
     data = {"request": request, "user": user, "exercises": exercises}
     return request.app.templates.TemplateResponse(WorkoutPages.EXERCISES.value, data)  
 
@@ -29,7 +29,7 @@ def create_exercises(request: ApiRequest, user: UserCookieDep):
 @exercises_router.get("/{exercise_id}")
 async def get_exercises(request: ApiRequest, db: DbDep, _: UserCookieDep, exercise_id: int):
     """Получить тренировочный план по идентификатору."""
-    exercise = db.workout.get_exercise_by_id(exercise_id)
+    exercise = await db.workout.get_exercise_by_id(exercise_id)
     if not exercise:
         raise HTTPException(status_code=404)
 

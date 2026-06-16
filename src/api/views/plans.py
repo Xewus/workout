@@ -15,10 +15,10 @@ plans_router = APIRouter()
 
 
 @plans_router.get("")
-def plans(request: ApiRequest, db: DbDep, user: UserCookieDep, only_mine: bool = False, offset: int = 0, limit: int = 10):
+async def plans(request: ApiRequest, db: DbDep, user: UserCookieDep, only_mine: bool = False, offset: int = 0, limit: int = 10):
     """Страница с планами тренировок."""
     user_id = user.id if only_mine else None
-    plans = db.workout.get_plans(offset=offset, limit=limit, user_id=user_id)
+    plans = await db.workout.get_plans(offset=offset, limit=limit, user_id=user_id)
     data = {"request": request, "user": user, "plans": plans}
     return request.app.templates.TemplateResponse(WorkoutPages.PLANS.value, data)   
 
@@ -32,7 +32,7 @@ def create_plan(request: ApiRequest, user: UserCookieDep):
 @plans_router.get("/{plan_id}")
 async def get_full_plan(request: ApiRequest, db: DbDep, _: UserCookieDep, plan_id: int):
     """Получить тренировочный план по идентификатору."""
-    plan = db.workout.get_full_plan_by_id(plan_id)
+    plan = await db.workout.get_full_plan_by_id(plan_id)
     if not plan:
         raise HTTPException(status_code=404)
 
@@ -47,7 +47,7 @@ async def get_full_plan(request: ApiRequest, db: DbDep, _: UserCookieDep, plan_i
 @plans_router.get("/{plan_id}/{date}")
 async def get_workout_day(request: ApiRequest, db: DbDep, plan_id: int, date: dt.date):
     # Здесь мы получаем данные из БД (как делали в сервисах)
-    day = db.workout.get_day(plan_id, date)
+    day = await db.workout.get_day(plan_id, date)
     if not day:
         return {"error": "Plan not found"}
 

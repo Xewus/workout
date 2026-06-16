@@ -180,7 +180,7 @@
             // 3. Сохраняем токен в cookie и переходим в личный кабинет
             // SameSite=Strict — cookie передаётся автоматически при каждом запросе к серверу
             document.cookie = `access_token=${access_token}; path=/; SameSite=Strict`;
-            window.location.href = '/api/views/me';
+            window.location.href = '/api/views/users/me';
 
         } catch (e) {
             showError(e.message);
