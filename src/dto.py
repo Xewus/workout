@@ -16,8 +16,10 @@ class UserDTO(BaseModel):
 
 
 class TokenDTO(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+    """Токен доступа, возвращаемый при аутентификации."""
+
+    access_token: str = Field(description="JWT-токен доступа.")
+    token_type: str = Field(default="bearer", description="Тип токена.")
 
 # ####################################################### #
 
@@ -27,16 +29,20 @@ class CreatePlanDTO(BaseModel):
     description: str | None = Field(None, description="Описание программы")
 
 class CreateDayDTO(BaseModel):
-    date: dt.date
-    plan_id: int
+    """Модель данных для создания дня тренировки через API."""
+
+    date: dt.date = Field(description="Дата дня тренировки.")
+    plan_id: int = Field(description="Идентификатор тренировочного плана.")
 
 
 class AddExerciseDTO(BaseModel):
-    day_id: int
-    exercise_id: int
+    """Модель данных для добавления упражнения в день тренировки через API."""
 
-    place_in_day: int
-    sets: int
-    reps: int
-    weight_kg: int | None
-    pause: int | None
+    day_id: int = Field(description="Идентификатор дня тренировки.")
+    exercise_id: int = Field(description="Идентификатор упражнения.")
+
+    place_in_day: int = Field(description="Порядковый номер упражнения в дне.")
+    sets: int = Field(description="Количество подходов.")
+    reps: int = Field(description="Количество повторений в подходе.")
+    weight_kg: int | None = Field(description="Вес отягощения в килограммах (если применимо).")
+    pause: int | None = Field(description="Длительность паузы между подходами в секундах.")

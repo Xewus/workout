@@ -18,6 +18,16 @@ templates = Jinja2Templates(directory=Path("src/templates"))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Управлять жизненным циклом приложения.
+
+    Создаёт схему БД при старте перед началом обслуживания запросов.
+
+    Args:
+        app (FastAPI): Экземпляр приложения.
+
+    Yields:
+        None: Управление на время работы приложения.
+    """
     await init_db()
     yield
 

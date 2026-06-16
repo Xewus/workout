@@ -1,3 +1,4 @@
+"""Сборка JSON API версии v1 из роутеров упражнений, планов и пользователей."""
 from fastapi import APIRouter
 
 from .exercises import exercises_router
