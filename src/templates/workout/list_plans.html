@@ -30,10 +30,9 @@
     <!-- Plans list -->
     <div class="flex flex-col gap-3">
         {% for plan in plans %}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow px-5 py-4
-                    hover:shadow-md transition cursor-pointer
-                    border border-transparent hover:border-indigo-200 dark:hover:border-indigo-700"
-             onclick="window.location.href='/api/views/plans/{{ plan.id }}'">
+        <div class="{% if plan.user_id == user.id %}bg-green-50 dark:bg-green-900/20 border-green-400 dark:border-green-500{% else %}bg-white dark:bg-gray-800 border-transparent hover:border-indigo-200 dark:hover:border-indigo-700{% endif %}
+            rounded-2xl shadow px-5 py-4 hover:shadow-md transition cursor-pointer border"
+            onclick="window.location.href='/api/views/plans/{{ plan.id }}'">
             <div class="font-semibold text-gray-900 dark:text-gray-100">{{ plan.title }}</div>
             <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ plan.description }}</div>
         </div>

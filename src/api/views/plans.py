@@ -51,13 +51,13 @@ def create_plan(request: ApiRequest, user: UserCookieDep) -> HTMLResponse:
 
 
 @plans_router.get("/{plan_id}")
-async def get_full_plan(request: ApiRequest, db: DbDep, _: UserCookieDep, plan_id: int) -> HTMLResponse:
+async def get_full_plan(request: ApiRequest, db: DbDep, user: UserCookieDep, plan_id: int) -> HTMLResponse:
     """Отдать страницу полного тренировочного плана по идентификатору.
 
     Args:
         request (ApiRequest): Текущий запрос.
         db (Db): Контейнер репозиториев.
-        _ (UserModel): Текущий пользователь (требуется авторизация).
+        user (UserModel): Текущий пользователь из cookie-токена.
         plan_id (int): Идентификатор тренировочного плана.
 
     Returns:
@@ -74,6 +74,7 @@ async def get_full_plan(request: ApiRequest, db: DbDep, _: UserCookieDep, plan_i
         "request": request,
         "plan": plan,
         "today_date": dt.date.today().isoformat(),
+        "user": user, 
     }
     return request.app.templates.TemplateResponse(WorkoutPages.PLAN.value, data) 
 

@@ -46,16 +46,23 @@ async def create_plan(db: DbDep, user: UserCookieDep, data: CreatePlanDTO) -> in
 
 
 @plans_router.post("/workout_day")
-async def create_workout_day(db: DbDep, data: CreateDayDTO) -> str | None:
+async def create_workout_day(db: DbDep, user: UserCookieDep, data: CreateDayDTO) -> str | None:
     """Создать новый день тренировки для конкретного плана.
 
     Args:
         db (Db): Контейнер репозиториев.
+        user (UserModel): Текущий пользователь-владелец плана.
         data (CreateDayDTO): Данные создаваемого дня тренировки.
 
     Returns:
         str | None: Текст ошибки при неудаче, иначе ``None``.
     """
+    plan = await db.workout.get_plan_by_id(data.plan_id)
+    if plan is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    if plan.user_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
     workout_day = await db.workout.create_workday(WorkoutDayModel(**data.model_dump()))
     return workout_day
 
@@ -71,7 +78,7 @@ async def create_workout_day(db: DbDep, data: CreateDayDTO) -> str | None:
 #     return db.workout.get_full_plan_by_id(plan_id)
 
 @plans_router.post("/add-exercise-to-day")
-async def add_exercise_to_workout_day(db: DbDep, data: AddExerciseDTO) -> dict[str, str]:
+async def add_exercise_to_workout_day(db: DbDep, user: UserCookieDep, data: AddExerciseDTO) -> dict[str, str]:
     """Добавить упражнение в день тренировки.
 
     Args:
@@ -80,14 +87,18 @@ async def add_exercise_to_workout_day(db: DbDep, data: AddExerciseDTO) -> dict[s
 
     Returns:
         dict[str, str]: Сообщение об успехе либо об ошибке (день/упражнение не найдены).
-    """
+    """ 
+    plan = await db.workout.get_plan_by_day_id(data.day_id)
+    if plan is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    if plan.user_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
     workout_day = await db.workout.get_workday_by_id(data.day_id)
-    print(f"{workout_day=}")
     if not workout_day:
         return {"error": "День тренировки не найден"}
     
     exercise = await db.workout.get_exercise_by_id(data.  exercise_id)
-    print(f"{exercise=}")
     if not exercise:
         return {"error": "Упражнение не найдено"}
     

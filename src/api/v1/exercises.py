@@ -71,7 +71,6 @@ async def search_exercise(db: DbDep, string: Annotated[str, Query()]) -> Sequenc
     Returns:
         Sequence[ExerciseModel]: Найденные упражнения.
     """
-    print(string)
     return await db.workout.search_exercise_by_name(string)
 
 

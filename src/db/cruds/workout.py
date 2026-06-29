@@ -52,10 +52,15 @@ class WorkoutCRUD(_DbConnector):
 
             return (await db.execute(query)).scalars().all()
 
-    # def get_plan_by_id(self: Self, plan_id: int) -> WorkoutPlanModel | None:
-    #     with self.connect() as db:
-    #         result = db.execute(select(WorkoutPlanModel).where(WorkoutPlanModel.id == plan_id).limit(1))
-    #         return result.scalar_one_or_none()
+    async def get_plan_by_id(self: Self, plan_id: int) -> WorkoutPlanModel | None:
+        async with self.connect() as db:
+            return (await db.execute(select(WorkoutPlanModel).where(WorkoutPlanModel.id == plan_id).limit(1))).scalar_one_or_none()
+
+    async def get_plan_by_day_id(self: Self, day_id: int) -> WorkoutPlanModel | None:
+        async with self.connect() as db:
+            return (await db.execute(
+                select(WorkoutPlanModel).join(WorkoutDayModel, WorkoutDayModel.plan_id == WorkoutPlanModel.id).where(
+                    WorkoutDayModel.id == day_id).limit(1))).scalar_one_or_none()
 
     async def get_full_plan_by_id(self: Self, plan_id: int) -> Mapping[str, object] | None:
         """Получить полный тренировочный план (с днями и упражнениями) по идентификатору.
@@ -89,7 +94,6 @@ class WorkoutCRUD(_DbConnector):
             if not result:
                 return None
 
-            print(result)
             plan_data: dict[str, Any] = {
                 "id": plan_id,
                 "title": result[0][0].title,
@@ -100,7 +104,6 @@ class WorkoutCRUD(_DbConnector):
                 return plan_data
 
             for _, day, exercise_in_day, exercise in result:
-                print(day)
                 if day is None:
                     break  # Если день тренировки отсутствует, прекращаем обработку)
 
@@ -175,8 +178,8 @@ class WorkoutCRUD(_DbConnector):
                 "exercises": [],
             }
             for _, ex_day, ex in rows:
-                print(_, ex_day, ex)
-                result["exercises"].append(ex.dict())
+                if ex:
+                    result["exercises"].append(ex.dict())
 
             return result
 

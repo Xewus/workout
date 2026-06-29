@@ -36,7 +36,6 @@ def login(request: ApiRequest) -> HTMLResponse:
     Returns:
         HTMLResponse: Отрендеренная страница входа.
     """
-    print(ApiRequest.headers)
     return request.app.templates.TemplateResponse(UserPages.LOGIN.value, {"request": request})
 
 @router.get("/me")
